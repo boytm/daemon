@@ -15,6 +15,7 @@
 
 TCHAR *app_dir = NULL;
 TCHAR *app_name = NULL;
+TCHAR log_path[MAX_PATH + 1] = {0};
 
 TCHAR *PACKAGE_NAME = NULL;
 TCHAR *PACKAGE_DISPLAY_NAME = NULL;
@@ -77,8 +78,7 @@ void Time(TCHAR* buffer)
 
 void Log(int nLevel, const TCHAR *fmt, ...)
 {
-	TCHAR file[MAX_PATH + 1] = {0};
-	_sntprintf(file, MAX_PATH, _T("%s\\%s.log"), app_dir, app_name);
+    const TCHAR *file = log_path;
 
 	TCHAR time_buf[TIME_FORMAT_LENGTH];
 	Time(time_buf);
@@ -89,7 +89,11 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 	_vsntprintf(msg, GOOGLE_ARRAYSIZE(msg) - 1, fmt, arglist);
 	va_end(arglist);
 
+#ifdef  _UNICODE
 	FILE *f = _tfopen(file, _T("a+, ccs=UTF-8"));
+#else
+	FILE *f = _tfopen(file, _T("a+"));
+#endif
 	if (f)
 	{
 		_ftprintf(f, _T("[%s]%s %s\n"), ToLogLevel(nLevel), time_buf, msg);
@@ -313,6 +317,15 @@ void InitApp()
 	app_name = ++pos;
 
 	szPath[size - 4] = '\0';
+
+    if(LOBYTE(LOWORD(GetVersion())) >= 6)
+    {
+        _sntprintf(log_path, MAX_PATH, _T("%s\\%s.log"), _tgetenv(_T("TEMP")), app_name); // vista and later
+    }
+    else
+    {
+        _sntprintf(log_path, MAX_PATH, _T("%s\\%s.log"), app_dir, app_name);
+    }
 }
 
 int _tmain(int argc, TCHAR *argv[])
