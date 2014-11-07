@@ -20,6 +20,7 @@ TCHAR log_path[MAX_PATH + 1] = {0};
 TCHAR *PACKAGE_NAME = NULL;
 TCHAR *PACKAGE_DISPLAY_NAME = NULL;
 TCHAR *PACKAGE_DESCRIPTION = NULL;
+TCHAR *PACKAGE_START_NAME = NULL;
 
 TCHAR *cmd = NULL;
 HANDLE handles[2];
@@ -133,6 +134,9 @@ void LoadConfig(const TCHAR *filename)
 		Log(LOG_LEVEL_FATAL, _T("CommandLine must be set"));
         exit(-1);
 	}
+
+	GetPrivateProfileString(_T("Settings"), _T("ServiceStartName"), NULL, buf, 4096, file);
+    PACKAGE_START_NAME = _tcsdup(buf);
 }
 
 void init_server()
@@ -330,6 +334,9 @@ void InitApp()
 
 int _tmain(int argc, TCHAR *argv[])
 {
+	const TCHAR *action = NULL;
+	int ret;
+
 	InitApp();
 	_tchdir(app_dir);
 	LoadConfig(NULL);
@@ -339,23 +346,23 @@ int _tmain(int argc, TCHAR *argv[])
         switch(argv[1][1])
         {
             case 'i':
-                ServiceInstall();
-                printf("install\n");
+                ret = ServiceInstall();
+                action = _T("install");
                 break;
 
             case 'u':
-                ServiceUninstall();
-                printf("uninstall\n");
+                ret = ServiceUninstall();
+                action = _T("uninstall");
                 break;
 
             case 'r':
-                ServiceStart();
-                printf("start\n");
+                ret = ServiceStart();
+                action = _T("start");
                 break;
 
             case 'k':
-                ServiceStop();
-                printf("stop\n");
+                ret = ServiceStop();
+                action = _T("stop");
                 break;
 
             case 'd':
@@ -363,7 +370,7 @@ int _tmain(int argc, TCHAR *argv[])
                     init_server();
 
                     ServiceSetFunc(run_server, NULL, NULL, stop_server);
-                    ServiceRun();
+                    ret = ServiceRun();
 
 					fini_server();
                 }
@@ -380,7 +387,15 @@ int _tmain(int argc, TCHAR *argv[])
         Usage(argv[0]);
     }
 
-    return 0;
+	if(action)
+		_tprintf(_T("%s service %s\n"), action, (ret == 1 ? _T("successful") : _T("failed")));
+
+	if(ret == 1)
+	{
+		return 0;
+	}	
+
+	return -1;
 }
 
 

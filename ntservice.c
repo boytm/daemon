@@ -39,6 +39,7 @@
 extern TCHAR *PACKAGE_NAME;
 extern TCHAR *PACKAGE_DISPLAY_NAME;
 extern TCHAR *PACKAGE_DESCRIPTION;
+extern TCHAR *PACKAGE_START_NAME;
 
 const int nMsgBufCnt = 256;
 static TCHAR szMsgBuf[1024 * 64] = {0};
@@ -187,7 +188,7 @@ int ServiceInstall()
                             PACKAGE_NAME, PACKAGE_DISPLAY_NAME,
                             SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
                             SERVICE_AUTO_START, SERVICE_ERROR_IGNORE, launch_cmd,
-                            0, 0, 0, 0, 0);
+                            0, 0, 0, PACKAGE_START_NAME, 0);
             if(service) {
                 sdBuf.lpDescription = PACKAGE_DESCRIPTION;
                 ChangeServiceConfig2(service, SERVICE_CONFIG_DESCRIPTION, &sdBuf);
