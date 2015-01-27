@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "ntservice.h"
+#include "bsd_getopt.h"
 
 
 #undef GOOGLE_ARRAYSIZE
@@ -279,13 +280,13 @@ void stop_server()
 
 void Usage(TCHAR *prog)
 {
-    printf("Usage: %s [cmdline]\n", prog);
-	printf(
-		"		-d		run service\n"
-		"		-i		install service\n"
-		"		-u		uninstall service\n"
-		"		-r		start service\n"
-		"		-k		kill service\n");
+    _tprintf(_T("\nUsage: %s [cmdline]\n"), prog);
+	_tprintf(
+		_T("		-d		run service\n")
+		_T("		-i		install service\n")
+		_T("		-u		uninstall service\n")
+		_T("		-r		start service\n")
+		_T("		-k		kill service\n"));
 }
 
 const TCHAR* GetAppPath()
@@ -334,6 +335,7 @@ void InitApp()
 
 int _tmain(int argc, TCHAR *argv[])
 {
+	bool show_usage = false;
 	const TCHAR *action = NULL;
 	int ret;
 
@@ -341,10 +343,12 @@ int _tmain(int argc, TCHAR *argv[])
 	_tchdir(app_dir);
 	LoadConfig(NULL);
 
-    if(argv[1] && argv[1][0] == '-')
-    {
-        switch(argv[1][1])
-        {
+	int opt;
+
+	while ((opt = getopt(argc, argv, _T("hiurkd"))) != -1) 
+	{
+		switch (opt) 
+		{
             case 'i':
                 ret = ServiceInstall();
                 action = _T("install");
@@ -378,14 +382,18 @@ int _tmain(int argc, TCHAR *argv[])
 
                 // ServiceRestart();
 
+			case 'h':
+				ret = 1;
+			case '?': //_tprintf(_T("unknown option character")); // getopt() output error message directly
             default:
-                Usage(argv[0]);
+				show_usage = true;
         }
     }
-    else
-    {
-        Usage(argv[0]);
-    }
+
+	if (show_usage)
+	{
+		Usage(argv[0]);
+	}
 
 	if(action)
 		_tprintf(_T("%s service %s\n"), action, (ret == 1 ? _T("successful") : _T("failed")));
