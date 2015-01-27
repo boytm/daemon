@@ -39,12 +39,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef WIN32
+#include <tchar.h>
+#else
+#define _tcslen strlen
+#define _tcsncmp strncmp
+#define _tcschr strchr
+#define _ftprintf fprintf
+
+#define _T(x) x
+#endif
+
 #if !defined(HAVE_GETOPT_LONG)
 int    opterr = 1;        /* if error message should be printed */
 int    optind = 1;        /* index into parent argv vector */
 int    optopt = '?';        /* character checked for validity */
 int    optreset;        /* reset getopt */
-char    *optarg;        /* argument associated with option */
+TCHAR    *optarg;        /* argument associated with option */
 
 #define IGNORE_FIRST    (*options == '-' || *options == '+')
 #define PRINT_ERROR    ((opterr) && ((*options != ':') \
@@ -60,25 +71,25 @@ char    *optarg;        /* argument associated with option */
              || (*options == ':') ? (int)':' : (int)'?')
 #define INORDER (int)1
 
-#define    EMSG    ""
+#define    EMSG    _T("")
 
-static int getopt_internal(int, char * const *, const char *);
+static int getopt_internal(int, TCHAR * const *, const TCHAR *);
 static int gcd(int, int);
-static void permute_args(int, int, int, char * const *);
+static void permute_args(int, int, int, TCHAR * const *);
 
-static char *place = EMSG; /* option letter processing */
+static TCHAR *place = EMSG; /* option letter processing */
 
 /* XXX: set optreset to 1 rather than these two */
 static int nonopt_start = -1; /* first non option argument (for permute) */
 static int nonopt_end = -1;   /* first option after non options (for permute) */
 
 /* Error messages */
-static const char recargchar[] = "option requires an argument -- %c";
-static const char recargstring[] = "option requires an argument -- %s";
-static const char ambig[] = "ambiguous option -- %.*s";
-static const char noarg[] = "option doesn't take an argument -- %.*s";
-static const char illoptchar[] = "unknown option -- %c";
-static const char illoptstring[] = "unknown option -- %s";
+static const TCHAR recargchar[] = _T("option requires an argument -- %c\n");
+static const TCHAR recargstring[] = _T("option requires an argument -- %s\n");
+static const TCHAR ambig[] = _T("ambiguous option -- %.*s\n");
+static const TCHAR noarg[] = _T("option doesn't take an argument -- %.*s\n");
+static const TCHAR illoptchar[] = _T("unknown option -- %c\n");
+static const TCHAR illoptstring[] = _T("unknown option -- %s\n");
 
 
 /*
@@ -108,10 +119,10 @@ static void
 permute_args(int panonopt_start,
          int panonopt_end,
          int opt_end,
-         char * const *nargv)
+         TCHAR * const *nargv)
 {
     int cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
-    char *swap;
+    TCHAR *swap;
 
     /*
      * compute lengths of blocks and number and size of cycles
@@ -131,9 +142,9 @@ permute_args(int panonopt_start,
                 pos += nopts;
             swap = nargv[pos];
             /* LINTED const cast */
-            ((char **) nargv)[pos] = nargv[cstart];
+            ((TCHAR **) nargv)[pos] = nargv[cstart];
             /* LINTED const cast */
-            ((char **)nargv)[cstart] = swap;
+            ((TCHAR **)nargv)[cstart] = swap;
         }
     }
 }
@@ -145,10 +156,10 @@ permute_args(int panonopt_start,
  */
 static int
 getopt_internal(int nargc,
-        char * const *nargv,
-        const char *options)
+        TCHAR * const *nargv,
+        const TCHAR *options)
 {
-    char *oli;                /* option letter list index */
+    TCHAR *oli;                /* option letter list index */
     int optchar;
 
     optarg = NULL;
@@ -224,12 +235,12 @@ start:
         }
     }
     if ((optchar = (int)*place++) == (int)':' ||
-        (oli = strchr(options + (IGNORE_FIRST ? 1 : 0), optchar)) == NULL) {
+        (oli = _tcschr(options + (IGNORE_FIRST ? 1 : 0), optchar)) == NULL) {
         /* option letter unknown or ':' */
         if (!*place)
             ++optind;
         if (PRINT_ERROR)
-            fprintf(stderr, illoptchar, optchar);
+            _ftprintf(stderr, illoptchar, optchar);
         optopt = optchar;
         return BADCH;
     }
@@ -241,7 +252,7 @@ start:
         if (++optind >= nargc) {    /* no arg */
             place = EMSG;
             if (PRINT_ERROR)
-                fprintf(stderr, recargchar, optchar);
+                _ftprintf(stderr, recargchar, optchar);
             optopt = optchar;
             return BADARG;
         } else                /* white space */
@@ -264,7 +275,7 @@ start:
             if (++optind >= nargc) {    /* no arg */
                 place = EMSG;
                 if (PRINT_ERROR)
-                    fprintf(stderr, recargchar, optchar);
+                    _ftprintf(stderr, recargchar, optchar);
                 optopt = optchar;
                 return BADARG;
             } else
@@ -284,7 +295,7 @@ start:
  * [eventually this will replace the real getopt]
  */
 int
-getopt(int nargc, char * const *nargv, const char *options)
+getopt(int nargc, TCHAR * const *nargv, const TCHAR *options)
 {
     int retval;
 
@@ -311,8 +322,8 @@ getopt(int nargc, char * const *nargv, const char *options)
  */
 int
 getopt_long(int nargc,
-        char * const *nargv,
-        const char *options,
+        TCHAR * const *nargv,
+        const TCHAR *options,
         const struct option *long_options,
         int *idx)
 {
@@ -321,7 +332,7 @@ getopt_long(int nargc,
     /* idx may be NULL */
 
     if ((retval = getopt_internal(nargc, nargv, options)) == -2) {
-        char *current_argv, *has_equal;
+        TCHAR *current_argv, *has_equal;
         size_t current_argv_len;
         int i, match;
 
@@ -344,20 +355,20 @@ getopt_long(int nargc,
             nonopt_start = nonopt_end = -1;
             return -1;
         }
-        if ((has_equal = strchr(current_argv, '=')) != NULL) {
+        if ((has_equal = _tcschr(current_argv, _T('='))) != NULL) {
             /* argument found (--option=arg) */
             current_argv_len = has_equal - current_argv;
             has_equal++;
         } else
-            current_argv_len = strlen(current_argv);
+            current_argv_len = _tcslen(current_argv);
         
         for (i = 0; long_options[i].name; i++) {
             /* find matching long option */
-            if (strncmp(current_argv, long_options[i].name,
+            if (_tcsncmp(current_argv, long_options[i].name,
                 current_argv_len))
                 continue;
 
-            if (strlen(long_options[i].name) ==
+            if (_tcslen(long_options[i].name) ==
                 (unsigned)current_argv_len) {
                 /* exact match */
                 match = i;
@@ -368,7 +379,7 @@ getopt_long(int nargc,
             else {
                 /* ambiguous abbreviation */
                 if (PRINT_ERROR)
-                    fprintf(stderr, ambig, (int)current_argv_len,
+                    _ftprintf(stderr, ambig, (int)current_argv_len,
                          current_argv);
                 optopt = 0;
                 return BADCH;
@@ -378,7 +389,7 @@ getopt_long(int nargc,
                 if (long_options[match].has_arg == no_argument
                 && has_equal) {
                 if (PRINT_ERROR)
-                    fprintf(stderr, noarg, (int)current_argv_len,
+                    _ftprintf(stderr, noarg, (int)current_argv_len,
                          current_argv);
                 /*
                  * XXX: GNU sets optopt to val regardless of
@@ -410,7 +421,7 @@ getopt_long(int nargc,
                  * indicates no error should be generated
                  */
                 if (PRINT_ERROR)
-                    fprintf(stderr, recargstring, current_argv);
+                    _ftprintf(stderr, recargstring, current_argv);
                 /*
                  * XXX: GNU sets optopt to val regardless
                  * of flag
@@ -424,7 +435,7 @@ getopt_long(int nargc,
             }
         } else {            /* unknown option */
             if (PRINT_ERROR)
-                fprintf(stderr, illoptstring, current_argv);
+                _ftprintf(stderr, illoptstring, current_argv);
             optopt = 0;
             return BADCH;
         }
