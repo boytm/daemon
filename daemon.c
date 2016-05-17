@@ -1,4 +1,7 @@
 #include <windows.h>
+#if _WIN32_WINNT >= 0x0602 /* Windows 8 and Windows Server 2012 */
+# include <Processthreadsapi.h>
+#endif
 #include <direct.h>
 #include <stdio.h>
 #include <tchar.h>
