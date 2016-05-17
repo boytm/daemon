@@ -177,6 +177,7 @@ int ServiceInstall()
     int ok = 0;
     SC_HANDLE service;
     SERVICE_DESCRIPTION sdBuf;
+	SERVICE_DELAYED_AUTO_START_INFO delayedInfo = {TRUE};
     SC_HANDLE serviceControlManager = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
 
     if(serviceControlManager) {
@@ -192,6 +193,7 @@ int ServiceInstall()
             if(service) {
                 sdBuf.lpDescription = PACKAGE_DESCRIPTION;
                 ChangeServiceConfig2(service, SERVICE_CONFIG_DESCRIPTION, &sdBuf);
+				ChangeServiceConfig2(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, &delayedInfo);
                 CloseServiceHandle(service);
                 ok = 1;
             }
