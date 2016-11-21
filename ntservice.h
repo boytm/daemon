@@ -8,6 +8,10 @@
 #ifndef SERVICE_H
 #define SERVICE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*svcFunc) ();
 
 int ServiceStart();
@@ -19,4 +23,7 @@ int ServiceRun();
 
 void ServiceSetFunc(svcFunc runFunc, svcFunc pauseFunc, svcFunc continueFunc, svcFunc stopFunc);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
