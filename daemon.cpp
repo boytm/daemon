@@ -360,7 +360,7 @@ void run_server()
             assert(processes_to_wait[idx]->pi.hProcess == process_handles[idx]);
             if (GetExitCodeProcess(process_handles[idx], &ec))
             {
-                Log(LOG_LEVEL_INFO, _T("Process [%u] have exited with exit code (%u)\n"), processes_to_wait[idx]->pi.dwProcessId, ec);
+                Log(LOG_LEVEL_INFO, _T("Process [%u] have exited with exit code (%u)"), processes_to_wait[idx]->pi.dwProcessId, ec);
             }
 
             // Close process and thread handles. 
@@ -397,7 +397,7 @@ void stop_server()
 
     if(!SetEvent(handles[idx_action]))
     {
-        Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)\n"), GetLastError());
+        Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), GetLastError());
     }
 }
 
