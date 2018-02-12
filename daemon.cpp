@@ -4,6 +4,7 @@
 #endif
 #include <assert.h>
 #include <direct.h>
+#include <signal.h>
 #include <stdio.h>
 #include <tchar.h>
 #include <time.h>
@@ -23,16 +24,6 @@ TCHAR *app_dir = NULL;
 TCHAR *app_name = NULL;
 TCHAR log_path[MAX_PATH + 1] = {0};
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-TCHAR *PACKAGE_NAME;
-TCHAR *PACKAGE_DISPLAY_NAME;
-TCHAR *PACKAGE_DESCRIPTION;
-TCHAR *PACKAGE_START_NAME;
-#ifdef __cplusplus
-}
-#endif
 
 #define MAX_PROCESS_NUM 63
 
@@ -399,6 +390,17 @@ void stop_server()
     }
 }
 
+void sig_handler(int sig)
+{
+	g_run = false;
+
+	if (!SetEvent(handles[idx_action]))
+	{
+		// In signal, we cannot call printf(), fread(), malloc(), time() ...
+		exit(EXIT_FAILURE);
+	}
+}
+
 void Usage(TCHAR *prog)
 {
     TCHAR configration_file[256] = {};
@@ -559,6 +561,7 @@ int _tmain(int argc, TCHAR *argv[])
 
         case 'f':
         {
+			signal(SIGINT, sig_handler);
             init_server();
 
             run_server();
