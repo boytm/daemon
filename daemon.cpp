@@ -26,10 +26,10 @@ TCHAR log_path[MAX_PATH + 1] = {0};
 #ifdef __cplusplus
 extern "C" {
 #endif
-TCHAR *PACKAGE_NAME = NULL;
-TCHAR *PACKAGE_DISPLAY_NAME = NULL;
-TCHAR *PACKAGE_DESCRIPTION = NULL;
-TCHAR *PACKAGE_START_NAME = NULL;
+TCHAR *PACKAGE_NAME;
+TCHAR *PACKAGE_DISPLAY_NAME;
+TCHAR *PACKAGE_DESCRIPTION;
+TCHAR *PACKAGE_START_NAME;
 #ifdef __cplusplus
 }
 #endif
@@ -121,7 +121,7 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 
     if (!run_as_service)
     {
-        _ftprintf(stdout, _T("%s"), msg);
+        _ftprintf(stdout, _T("%s\n"), msg);
     }
 
 #ifdef  _UNICODE
@@ -186,8 +186,6 @@ void LoadConfig(const TCHAR *file)
 
 void init_server()
 {
-    run_as_service = TRUE;
-
     handles[idx_action] = CreateEvent( 
             NULL,   // default security attributes
             FALSE,  // auto-reset event object
@@ -498,6 +496,7 @@ int _tmain(int argc, TCHAR *argv[])
             break;
 
         case 'd':
+            run_as_service = TRUE;
             action_num = 'd';
             break;
 
