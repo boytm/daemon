@@ -25,7 +25,7 @@ TCHAR *app_name = NULL;
 TCHAR log_path[MAX_PATH + 1] = {0};
 
 
-#define MAX_PROCESS_NUM 63
+#define MAX_PROCESS_NUM (MAXIMUM_WAIT_OBJECTS - 1)
 
 struct Process
 {
@@ -377,27 +377,44 @@ void run_server()
             processes_to_wait_count -= 1;
         }
     }
+}
 
+void stop_server(BOOL in_sig)
+{
+    g_run = false;
+
+    if (!SetEvent(handles[idx_action]))
+    {
+        // In signal, we cannot call printf(), fread(), malloc(), time() ...
+        if (in_sig) {
+            exit(EXIT_FAILURE);
+        }
+        else 
+        {
+            Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), GetLastError());
+        }
+    }
 }
 
 void stop_server()
 {
-    g_run = false;
-
-    if(!SetEvent(handles[idx_action]))
-    {
-        Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), GetLastError());
-    }
+    stop_server(FALSE);
 }
 
-void sig_handler(int sig)
+BOOL WINAPI console_ctrl_handler(DWORD event)
 {
-	g_run = false;
-
-	if (!SetEvent(handles[idx_action]))
+	switch (event)
 	{
-		// In signal, we cannot call printf(), fread(), malloc(), time() ...
-		exit(EXIT_FAILURE);
+	case CTRL_C_EVENT:
+	case CTRL_BREAK_EVENT:
+	case CTRL_CLOSE_EVENT:
+	{
+        stop_server(TRUE);
+	}
+	return TRUE;
+
+	default:
+		return FALSE;
 	}
 }
 
@@ -486,24 +503,11 @@ int _tmain(int argc, TCHAR *argv[])
             break;
 
         case 'u':
-            action_num = 'u';
-            break;
-
         case 'r':
-            action_num = 'r';
-            break;
-
         case 'k':
-            action_num = 'k';
-            break;
-
         case 'd':
-            run_as_service = TRUE;
-            action_num = 'd';
-            break;
-
         case 'f':
-            action_num = 'f';
+            action_num = opt;
             break;
 
         case 'h':
@@ -514,7 +518,7 @@ int _tmain(int argc, TCHAR *argv[])
         }
     }
 
-	if (argc == 1 || show_usage)
+	if (argc == 1 || show_usage || action_num == 0)
 	{
 		Usage(argv[0]);
 	}
@@ -550,6 +554,7 @@ int _tmain(int argc, TCHAR *argv[])
 
         case 'd':
         {
+            run_as_service = TRUE;
             init_server();
 
             ServiceSetFunc(run_server, NULL, NULL, stop_server);
@@ -561,7 +566,7 @@ int _tmain(int argc, TCHAR *argv[])
 
         case 'f':
         {
-			signal(SIGINT, sig_handler);
+			SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
             init_server();
 
             run_server();
