@@ -35,6 +35,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 TCHAR *PACKAGE_NAME = NULL;
 TCHAR *PACKAGE_DISPLAY_NAME = NULL;
@@ -53,7 +54,7 @@ static TCHAR szMsgBuf[1024 * 64] = {0};
           code, \
           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
           szMsgBuf, \
-          sizeof(szMsgBuf) / sizeof(szMsgBuf[0]), NULL), \
+          _countof(szMsgBuf), NULL), \
       szMsgBuf)
 
 /* Extern callbacks to manage the server */
@@ -181,10 +182,10 @@ int ServiceInstall()
     SC_HANDLE serviceControlManager = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
 
     if(serviceControlManager) {
-        TCHAR exe_path[MAX_PATH + 1];
-        if(GetModuleFileName(0, exe_path, sizeof(exe_path)) > 0) {
-            TCHAR launch_cmd[MAX_PATH + 50];
-            _stprintf(launch_cmd, _T("\"%s\" -d runservice"), exe_path);
+        TCHAR exe_path[MAX_PATH + 1] = {'\0'};
+        if(GetModuleFileName(0, exe_path, _countof(exe_path)) > 0) {
+            TCHAR launch_cmd[MAX_PATH + 50] = {'\0'};
+            _sntprintf(launch_cmd, _countof(launch_cmd) - 1, _T("\"%s\" -d runservice"), exe_path);
             service = CreateService(serviceControlManager,
                             PACKAGE_NAME, PACKAGE_DISPLAY_NAME,
                             SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,

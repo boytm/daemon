@@ -35,8 +35,8 @@ build_script:
 - set PATH=C:\ProgramData\chocolatey\bin;C:\apache-ant-1.9.6\bin;%PATH%
 - mkdir cmake-build
 - cd cmake-build
-- cmake -G "%GENERATOR%" .. -DCMAKE_BUILD_TYPE=Release
-- cmake --build .  --clean-first
+- cmake -G "%GENERATOR%" .. 
+- cmake --build . --config Release  --clean-first
 # TODO: 
 # - cpack
 # - ctest 

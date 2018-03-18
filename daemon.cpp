@@ -241,7 +241,6 @@ void kill_child(struct Process *p)
 
 void run_server()
 {
-    int retval;
     time_t now;
     time_t wait_until;
 
@@ -379,14 +378,15 @@ void run_server()
     }
 }
 
-void stop_server(BOOL in_sig)
+void stop_server()
 {
     g_run = false;
 
     if (!SetEvent(handles[idx_action]))
     {
         // In signal, we cannot call printf(), fread(), malloc(), time() ...
-        if (in_sig) {
+        if (!run_as_service) 
+        {
             exit(EXIT_FAILURE);
         }
         else 
@@ -394,11 +394,6 @@ void stop_server(BOOL in_sig)
             Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), GetLastError());
         }
     }
-}
-
-void stop_server()
-{
-    stop_server(FALSE);
 }
 
 BOOL WINAPI console_ctrl_handler(DWORD event)
@@ -409,7 +404,7 @@ BOOL WINAPI console_ctrl_handler(DWORD event)
 	case CTRL_BREAK_EVENT:
 	case CTRL_CLOSE_EVENT:
 	{
-        stop_server(TRUE);
+        stop_server();
 	}
 	return TRUE;
 
@@ -425,13 +420,13 @@ void Usage(TCHAR *prog)
 
     _tprintf(_T("\nUsage: %s [cmdline]\n"), prog);
 	_tprintf(
-        _T("		-c		configuration file, default %s\n")
-        _T("		-f		run foreground\n")
-		_T("		-d		run as a background service\n")
-		_T("		-i		install service\n")
-		_T("		-u		uninstall service\n")
-		_T("		-r		start service\n")
-		_T("		-k		kill service\n"),
+        _T("  -c	configuration file, default %s\n")
+        _T("  -f	run foreground\n")
+		_T("  -d	run as a background service\n")
+		_T("  -i	install service\n")
+		_T("  -u	uninstall service\n")
+		_T("  -r	start service\n")
+		_T("  -k	kill service\n"),
         configration_file);
 }
 
