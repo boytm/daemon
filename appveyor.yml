@@ -13,7 +13,11 @@ environment:
 
   matrix:
     - ARCH: 32
+      GENERATOR: Visual Studio 15 2017
+      BUILD_SUFFIX: vc2017_x86
     - ARCH: 64
+      GENERATOR: Visual Studio 15 2017 Win64
+      BUILD_SUFFIX: vc2017_x64
 
 
 install:
@@ -31,7 +35,7 @@ build_script:
 - set PATH=C:\ProgramData\chocolatey\bin;C:\apache-ant-1.9.6\bin;%PATH%
 - mkdir cmake-build
 - cd cmake-build
-- cmake -G "NMake Makefiles" .. -DCMAKE_BUILD_TYPE=Release
+- cmake -G "%GENERATOR%" .. -DCMAKE_BUILD_TYPE=Release
 - cmake --build .  --clean-first
 # TODO: 
 # - cpack
@@ -39,7 +43,7 @@ build_script:
 
 artifacts:
 - path: cmake-build\daemon.exe
-  name: daemon_$(APPVEYOR_BUILD_WORKER_IMAGE)_$(ARCH)
+  name: daemon_$(BUILD_SUFFIX)
   type: zip
 
 deploy:
