@@ -1,0 +1,55 @@
+
+# build daemon on AppVeyor - https://ci.appveyor.com
+
+#shallow_clone: true
+clone_depth: 2
+
+version: '{build}'
+image:
+  - Visual Studio 2017
+
+environment:
+  BOOST_ROOT: C:\Libraries\boost_1_66_0
+
+  matrix:
+    - ARCH: 86
+    - ARCH: 64
+
+
+install:
+- ECHO "Filesystem root:"
+- ps: "ls \"C:/\""
+  # recursive clone 
+- git submodule update --init --recursive --depth 3
+  # VC env
+- '"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars%ARCH%.bat"'
+  # 
+- cd %APPVEYOR_BUILD_FOLDER%
+
+
+build_script:
+- set PATH=C:\ProgramData\chocolatey\bin;C:\apache-ant-1.9.6\bin;%PATH%
+- mkdir cmake-build
+- cd cmake-build
+- cmake -G "NMake Makefiles" .. -DCMAKE_BUILD_TYPE=Release
+- cmake --build .  --clean-first
+# TODO: 
+# - cpack
+# - ctest 
+
+artifacts:
+- path: cmake-build\daemon.exe
+  name: daemon_$(APPVEYOR_BUILD_WORKER_IMAGE)_$(ARCH)
+
+deploy:
+  #release: mproxy_v$(appveyor_build_version)
+  #description: 'Release description'
+  provider: GitHub
+  auth_token:
+    secure: wFxle0z6fJTg0aVgEyl46GbOPGvVb/WvnNmmO5ifTaBQx5Q3qlhlfwwIpuABfuty 
+  artifact: /daemon_.*/
+  draft: true
+  prerelease: false
+  on:
+    appveyor_repo_tag: true        # deploy on tag push only
+

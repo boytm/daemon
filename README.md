@@ -1,6 +1,9 @@
 daemon
 ======
 
+[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/e54233giep04qbb7?svg=true)](https://ci.appveyor.com/project/boytm/daemon)
+
+
 A utility, make a command line tool run as a service on windows.
 
 # Installation #

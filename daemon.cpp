@@ -499,9 +499,6 @@ int _tmain(int argc, TCHAR *argv[])
             break;
 
         case 'i':
-            action_num = 'i';
-            break;
-
         case 'u':
         case 'r':
         case 'k':
