@@ -12,7 +12,7 @@ environment:
   BOOST_ROOT: C:\Libraries\boost_1_66_0
 
   matrix:
-    - ARCH: 86
+    - ARCH: 32
     - ARCH: 64
 
 
@@ -40,6 +40,7 @@ build_script:
 artifacts:
 - path: cmake-build\daemon.exe
   name: daemon_$(APPVEYOR_BUILD_WORKER_IMAGE)_$(ARCH)
+  type: zip
 
 deploy:
   #release: mproxy_v$(appveyor_build_version)
