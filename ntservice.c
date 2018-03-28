@@ -42,20 +42,6 @@ TCHAR *PACKAGE_DISPLAY_NAME = NULL;
 TCHAR *PACKAGE_DESCRIPTION = NULL;
 TCHAR *PACKAGE_START_NAME = NULL;
 
-const int nMsgBufCnt = 256;
-static TCHAR szMsgBuf[1024 * 64] = {0};
-
-#define ErrorDetail(code) \
-    ( \
-      FormatMessage( \
-          FORMAT_MESSAGE_FROM_SYSTEM | \
-          FORMAT_MESSAGE_IGNORE_INSERTS, \
-          NULL, \
-          code, \
-          MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
-          szMsgBuf, \
-          _countof(szMsgBuf), NULL), \
-      szMsgBuf)
 
 /* Extern callbacks to manage the server */
 svcFunc runServer = NULL;

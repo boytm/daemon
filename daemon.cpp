@@ -24,6 +24,7 @@ TCHAR *app_dir = NULL;
 TCHAR *app_name = NULL;
 TCHAR log_path[MAX_PATH + 1] = {0};
 
+#define LASTERROR(buf)  ErrorDetail(GetLastError(), buf, _countof(buf) - 1)
 
 #define MAX_PROCESS_NUM (MAXIMUM_WAIT_OBJECTS - 1)
 
@@ -127,6 +128,21 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 	}
 }
 
+const TCHAR* ErrorDetail(DWORD code, TCHAR *szMsgBuf, size_t len)
+{
+    if (!FormatMessage(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        code,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        szMsgBuf,
+        len, NULL))
+    {
+        _sntprintf(szMsgBuf, len, _T("%ud"), code);
+    }
+    return szMsgBuf;
+}
+
 void LoadConfig(const TCHAR *file)
 {
     TCHAR buf[4096] = { 0 };
@@ -201,6 +217,7 @@ void fini_server()
 
 void kill_child(struct Process *p)
 {
+    TCHAR buf[4096] = {'\0'};
 	DWORD pid = GetProcessId(p->pi.hProcess);
 	if(GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pid))
 	{
@@ -221,12 +238,12 @@ void kill_child(struct Process *p)
 	}
 	else
 	{
-		Log(LOG_LEVEL_INFO, _T("GenerateConsoleCtrlEvent failed (%d)"), GetLastError());
+		Log(LOG_LEVEL_INFO, _T("GenerateConsoleCtrlEvent failed (%s)"), LASTERROR(buf));
 	}
 
     if (!TerminateProcess(p->pi.hProcess, 0))
 	{
-		Log(LOG_LEVEL_ERROR, _T("TerminateProcess failed (%d)"), GetLastError());
+        Log(LOG_LEVEL_ERROR, _T("TerminateProcess failed (%s)"), LASTERROR(buf));
 	}
 	else
 	{
@@ -238,7 +255,6 @@ void kill_child(struct Process *p)
     CloseHandle(p->pi.hThread);
 }
 
-
 void run_server()
 {
     time_t now;
@@ -249,6 +265,7 @@ void run_server()
 
     struct Process *processes_to_start[MAX_PROCESS_NUM];
     int processes_to_start_count = 0;
+    TCHAR buf[4096] = {'\0'};
 
     DWORD ec = 0;
 
@@ -293,7 +310,7 @@ void run_server()
                     &processes_to_start[i]->pi)           // Pointer to PROCESS_INFORMATION structure
                     )
                 {
-                    Log(LOG_LEVEL_ERROR, _T("CreateProcess failed (%d): %s"), GetLastError(), processes_to_start[i]->cmd);
+                    Log(LOG_LEVEL_ERROR, _T("CreateProcess failed (%s): %s"), LASTERROR(buf), processes_to_start[i]->cmd);
                     // retry
                     processes_to_start[i]->start_time = now + restart_child_span;
                 }
@@ -380,6 +397,7 @@ void run_server()
 
 void stop_server()
 {
+    TCHAR buf[4096] = {'\0'};
     g_run = false;
 
     if (!SetEvent(handles[idx_action]))
@@ -391,7 +409,7 @@ void stop_server()
         }
         else 
         {
-            Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), GetLastError());
+            Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), LASTERROR(buf));
         }
     }
 }
