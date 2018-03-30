@@ -108,7 +108,7 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 	va_list arglist;
 	va_start(arglist, fmt); 
 	TCHAR msg[4096] = {'\0'};
-	_vsntprintf(msg, GOOGLE_ARRAYSIZE(msg) - 1, fmt, arglist);
+    _vsntprintf_s(msg, _TRUNCATE, fmt, arglist);
 	va_end(arglist);
 
 #ifdef  _UNICODE
@@ -182,7 +182,7 @@ void LoadConfig(const TCHAR *file)
 
     if (file == NULL || file[0] == '\0')
     {
-        _sntprintf(temp_file, 4096, _T("%s\\%s.ini"), app_dir, app_name);
+        _sntprintf_s(temp_file, _TRUNCATE, _T("%s\\%s.ini"), app_dir, app_name);
         file = temp_file;
     }
 
@@ -205,7 +205,7 @@ void LoadConfig(const TCHAR *file)
     for (int i = 0; i < MAX_PROCESS_NUM; ++i)
     {
         TCHAR appname[256] = {};
-        _sntprintf(appname, GOOGLE_ARRAYSIZE(appname) - 1, _T("Process%d"), i);
+        _sntprintf_s(appname, _TRUNCATE, _T("Process%d"), i);
         if (GetPrivateProfileString(appname, _T("CommandLine"), NULL, buf, 4096, file))
         {
             processes[process_count].cmd = _tcsdup(buf);
@@ -465,8 +465,8 @@ BOOL WINAPI console_ctrl_handler(DWORD event)
 
 void Usage(TCHAR *prog)
 {
-    TCHAR configration_file[256] = {};
-    _sntprintf(configration_file, 4096, _T("%s\\%s.ini"), app_dir, app_name);
+    TCHAR configration_file[MAX_PATH] = {};
+    _sntprintf_s(configration_file, _TRUNCATE, _T("%s\\%s.ini"), app_dir, app_name);
 
     _tprintf(_T("\nUsage: %s [cmdline]\n"), prog);
 	_tprintf(
@@ -516,11 +516,11 @@ void InitApp()
 
     if (LOBYTE(LOWORD(GetVersion())) >= 6)
     {
-        _sntprintf(log_path, MAX_PATH, _T("%s\\%s.log"), _tgetenv(_T("TEMP")), app_name); // vista and later
+        _sntprintf_s(log_path, _TRUNCATE, _T("%s\\%s.log"), _tgetenv(_T("TEMP")), app_name); // vista and later
     }
     else
     {
-        _sntprintf(log_path, MAX_PATH, _T("%s\\%s.log"), app_dir, app_name);
+        _sntprintf_s(log_path, _TRUNCATE, _T("%s\\%s.log"), app_dir, app_name);
     }
 }
 
