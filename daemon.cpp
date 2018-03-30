@@ -83,14 +83,14 @@ TCHAR *ToLogLevel(int id)
 void Time(TCHAR* buffer)
 {
 	time_t now;
-	struct tm* timeinfo = NULL;
+	struct tm timeinfo;
 
 	time(&now);
-	timeinfo = localtime(&now);
+    errno_t err = localtime_s(&timeinfo, &now);
 
-	if(timeinfo != NULL)
+    if (0 == err)
 	{
-		_tcsftime(buffer, TIME_FORMAT_LENGTH, TIME_FORMAT, timeinfo);
+		_tcsftime(buffer, TIME_FORMAT_LENGTH, TIME_FORMAT, &timeinfo);
 	}
 	else
 	{
@@ -111,11 +111,6 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 	_vsntprintf(msg, GOOGLE_ARRAYSIZE(msg) - 1, fmt, arglist);
 	va_end(arglist);
 
-    if (!run_as_service)
-    {
-        _ftprintf(stdout, _T("%s\n"), msg);
-    }
-
 #ifdef  _UNICODE
 	FILE *f = _tfopen(file, _T("a+, ccs=UTF-8"));
 #else
@@ -125,21 +120,58 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 	{
 		_ftprintf(f, _T("[%s]%s %s\n"), ToLogLevel(nLevel), time_buf, msg);
 		fclose(f);
+        f = NULL;
 	}
+
+    if (!run_as_service)
+    {
+#if _UNICODE
+        DWORD written = 0;
+        HANDLE out = GetStdHandle(STD_OUTPUT_HANDLE);
+
+        int len = lstrlen(msg);
+        msg[len] = '\n';
+        len += 1;
+
+        if (INVALID_HANDLE_VALUE != out)
+        {
+            // convert unicode string to console 's code page
+            UINT cp = GetConsoleOutputCP();
+            DWORD mulit_byte_len = WideCharToMultiByte(cp, 0, msg, len, NULL, 0, NULL, NULL);
+
+            char *multi_byte_msg = new char[mulit_byte_len];
+
+            WideCharToMultiByte(cp, 0, msg, len, multi_byte_msg, mulit_byte_len, NULL, NULL);
+
+            WriteFile(out, multi_byte_msg, mulit_byte_len, &written, NULL);
+
+            delete[] multi_byte_msg;
+        }
+#else
+        _ftprintf(stdout, _T("%s\n"), msg);
+#endif
+    }
 }
 
 const TCHAR* ErrorDetail(DWORD code, TCHAR *szMsgBuf, size_t len)
 {
-    if (!FormatMessage(
+    DWORD ret_len = 0;
+    if (!(ret_len = FormatMessage(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         code,
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         szMsgBuf,
-        len, NULL))
+        len, NULL)))
     {
         _sntprintf(szMsgBuf, len, _T("%ud"), code);
     }
+
+    if (ret_len > 2 && szMsgBuf[ret_len - 2] == '\r' && szMsgBuf[ret_len - 1] == '\n')
+    {
+        szMsgBuf[ret_len - 2] = '\0';
+    }
+
     return szMsgBuf;
 }
 
