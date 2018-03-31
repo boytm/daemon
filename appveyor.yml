@@ -42,7 +42,7 @@ build_script:
 # - ctest 
 
 artifacts:
-- path: cmake-build\daemon.exe
+- path: cmake-build\Release
   name: daemon_$(BUILD_SUFFIX)
   type: zip
 
