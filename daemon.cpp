@@ -98,10 +98,8 @@ void Time(TCHAR* buffer)
 	}
 }
 
-void Log(int nLevel, const TCHAR *fmt, ...)
+void Log(int nLevel, const TCHAR *file, int lineno, const TCHAR *fmt, ...)
 {
-    const TCHAR *file = log_path;
-
 	TCHAR time_buf[TIME_FORMAT_LENGTH];
 	Time(time_buf);
 
@@ -112,13 +110,13 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 	va_end(arglist);
 
 #ifdef  _UNICODE
-	FILE *f = _tfopen(file, _T("a+, ccs=UTF-8"));
+	FILE *f = _tfopen(log_path, _T("a+, ccs=UTF-8"));
 #else
-	FILE *f = _tfopen(file, _T("a+"));
+	FILE *f = _tfopen(log_path, _T("a+"));
 #endif
 	if (f)
 	{
-		_ftprintf(f, _T("[%s]%s %s\n"), ToLogLevel(nLevel), time_buf, msg);
+		_ftprintf(f, _T("[%s]%s %s:%d %s\n"), ToLogLevel(nLevel), time_buf, file, lineno, msg);
 		fclose(f);
         f = NULL;
 	}
@@ -152,6 +150,27 @@ void Log(int nLevel, const TCHAR *fmt, ...)
 #endif
     }
 }
+
+#if _WIN32
+# define DIRECTORY_SEPARATOR_CHAR '\\'
+#else
+# define DIRECTORY_SEPARATOR_CHAR '/'
+#endif
+
+#define __FILENAME__ (_tcsrchr(_T(__FILE__), DIRECTORY_SEPARATOR_CHAR) ? \
+        _tcsrchr(_T(__FILE__), DIRECTORY_SEPARATOR_CHAR) + 1 : _T(__FILE__))
+
+#define LOG(prio, fmt, ...)                                                \
+        Log(prio, __FILENAME__, __LINE__, fmt, ## __VA_ARGS__))
+
+#define LOGD(fmt, ...) Log(LOG_LEVEL_DEBUG, __FILENAME__, __LINE__, fmt, ## __VA_ARGS__)
+#define LOGI(fmt, ...) Log(LOG_LEVEL_INFO, __FILENAME__, __LINE__, fmt, ## __VA_ARGS__)
+#define LOGW(fmt, ...) Log(LOG_LEVEL_WARN, __FILENAME__, __LINE__, fmt, ## __VA_ARGS__)
+#define LOGE(fmt, ...) Log(LOG_LEVEL_ERROR, __FILENAME__, __LINE__, fmt, ## __VA_ARGS__)
+#define LOGF(fmt, ...) do { \
+    Log(LOG_LEVEL_FATAL, __FILENAME__, __LINE__, fmt, ## __VA_ARGS__); \
+    exit(EXIT_FAILURE); \
+} while (0)
 
 const TCHAR* ErrorDetail(DWORD code, TCHAR *szMsgBuf, size_t len)
 {
@@ -192,8 +211,7 @@ void LoadConfig(const TCHAR *file)
 	}
     else
 	{
-		Log(LOG_LEVEL_FATAL, _T("ServiceName must be set"));
-        exit(-1);
+		LOGF(_T("ServiceName must be set"));
 	}
 
     GetPrivateProfileString(_T("Settings"), _T("Description"), NULL, buf, 4096, file);
@@ -215,8 +233,7 @@ void LoadConfig(const TCHAR *file)
     
     if (process_count <= 0)
 	{
-		Log(LOG_LEVEL_FATAL, _T("CommandLine must be set"));
-        exit(-1);
+		LOGF(_T("CommandLine must be set"));
 	}
 
 	GetPrivateProfileString(_T("Settings"), _T("ServiceStartName"), NULL, buf, 4096, file);
@@ -233,10 +250,10 @@ void init_server()
 
 	if(!GetConsoleWindow())
 	{
-		Log(LOG_LEVEL_INFO, _T("No window used by the console associated with the calling process"));
+		LOGI(_T("No window used by the console associated with the calling process"));
 		if(AllocConsole())
 		{
-			Log(LOG_LEVEL_INFO, _T("Alloc Console successfully"));
+			LOGI(_T("Alloc Console successfully"));
 		}
 	}
 }
@@ -260,7 +277,7 @@ void kill_child(struct Process *p)
 		{
 		case WAIT_OBJECT_0:
 			// child exit normally
-			Log(LOG_LEVEL_INFO, _T("Process [%d] exited normally with CTRL_BREAK_EVENT"), pid);
+			LOGI(_T("Process [%d] exited normally with CTRL_BREAK_EVENT"), pid);
 			return;
 
 		case WAIT_TIMEOUT:
@@ -270,16 +287,16 @@ void kill_child(struct Process *p)
 	}
 	else
 	{
-		Log(LOG_LEVEL_INFO, _T("GenerateConsoleCtrlEvent failed (%s)"), LASTERROR(buf));
+		LOGI(_T("GenerateConsoleCtrlEvent failed (%s)"), LASTERROR(buf));
 	}
 
     if (!TerminateProcess(p->pi.hProcess, 0))
 	{
-        Log(LOG_LEVEL_ERROR, _T("TerminateProcess failed (%s)"), LASTERROR(buf));
+        LOGE(_T("TerminateProcess failed (%s)"), LASTERROR(buf));
 	}
 	else
 	{
-		Log(LOG_LEVEL_INFO, _T("Process [%d] was forced to exit"), pid);
+		LOGI(_T("Process [%d] was forced to exit"), pid);
 	}
 
     // Close process and thread handles. 
@@ -342,12 +359,13 @@ void run_server()
                     &processes_to_start[i]->pi)           // Pointer to PROCESS_INFORMATION structure
                     )
                 {
-                    Log(LOG_LEVEL_ERROR, _T("CreateProcess failed (%s): %s"), LASTERROR(buf), processes_to_start[i]->cmd);
+                    LOGE(_T("CreateProcess failed (%s): %s"), LASTERROR(buf), processes_to_start[i]->cmd);
                     // retry
                     processes_to_start[i]->start_time = now + restart_child_span;
                 }
                 else
                 {
+                    LOGI(_T("CreateProcess pid %u: %s"), processes_to_start[i]->pi.dwProcessId, processes_to_start[i]->cmd);
                     processes_to_start[i]->state = Process::runing;
                     process_handles[processes_to_wait_count] = processes_to_start[i]->pi.hProcess; // 
                     processes_to_wait[processes_to_wait_count] = processes_to_start[i];
@@ -397,7 +415,7 @@ void run_server()
             assert(processes_to_wait[idx]->pi.hProcess == process_handles[idx]);
             if (GetExitCodeProcess(process_handles[idx], &ec))
             {
-                Log(LOG_LEVEL_INFO, _T("Process [%u] have exited with exit code (%u)"), processes_to_wait[idx]->pi.dwProcessId, ec);
+                LOGI(_T("Process [%u] have exited with exit code (%u)"), processes_to_wait[idx]->pi.dwProcessId, ec);
             }
 
             // Close process and thread handles. 
@@ -441,7 +459,7 @@ void stop_server()
         }
         else 
         {
-            Log(LOG_LEVEL_ERROR, _T("SetEvent failed (%d)"), LASTERROR(buf));
+            LOGE(_T("SetEvent failed (%d)"), LASTERROR(buf));
         }
     }
 }
