@@ -164,7 +164,9 @@ int ServiceInstall()
     int ok = 0;
     SC_HANDLE service;
     SERVICE_DESCRIPTION sdBuf;
-	SERVICE_DELAYED_AUTO_START_INFO delayedInfo = {TRUE};
+#if (_WIN32_WINNT >= 0x0600)
+    SERVICE_DELAYED_AUTO_START_INFO delayedInfo = {TRUE};
+#endif
     SC_HANDLE serviceControlManager = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
 
     if(serviceControlManager) {
@@ -180,7 +182,9 @@ int ServiceInstall()
             if(service) {
                 sdBuf.lpDescription = PACKAGE_DESCRIPTION;
                 ChangeServiceConfig2(service, SERVICE_CONFIG_DESCRIPTION, &sdBuf);
-				ChangeServiceConfig2(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, &delayedInfo);
+#if (_WIN32_WINNT >= 0x0600)
+                ChangeServiceConfig2(service, SERVICE_CONFIG_DELAYED_AUTO_START_INFO, &delayedInfo);
+#endif
                 CloseServiceHandle(service);
                 ok = 1;
             }

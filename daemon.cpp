@@ -62,7 +62,7 @@ const int restart_child_span = 5;
 #define LOG_LEVEL_ERROR 4
 #define LOG_LEVEL_FATAL 5
 
-TCHAR *ToLogLevel(int id)
+const TCHAR* ToLogLevel(int id)
 {
 #define case_statement(x) case LOG_LEVEL_##x: return _T(#x);
 
@@ -137,13 +137,13 @@ void Log(int nLevel, const TCHAR *file, int lineno, const TCHAR *fmt, ...)
             UINT cp = GetConsoleOutputCP();
             DWORD mulit_byte_len = WideCharToMultiByte(cp, 0, msg, len, NULL, 0, NULL, NULL);
 
-            char *multi_byte_msg = new char[mulit_byte_len];
+            char *multi_byte_msg = (char*)malloc(mulit_byte_len);
 
             WideCharToMultiByte(cp, 0, msg, len, multi_byte_msg, mulit_byte_len, NULL, NULL);
 
             WriteFile(out, multi_byte_msg, mulit_byte_len, &written, NULL);
 
-            delete[] multi_byte_msg;
+            free(multi_byte_msg);
         }
 #else
         _ftprintf(stdout, _T("%s\n"), msg);
@@ -483,7 +483,7 @@ BOOL WINAPI console_ctrl_handler(DWORD event)
 
 void Usage(TCHAR *prog)
 {
-    TCHAR configration_file[MAX_PATH] = {};
+    TCHAR configration_file[MAX_PATH + 1] = {};
     _sntprintf_s(configration_file, _TRUNCATE, _T("%s\\%s.ini"), app_dir, app_name);
 
     _tprintf(_T("\nUsage: %s [cmdline]\n"), prog);
@@ -542,7 +542,7 @@ void InitApp()
     }
 }
 
-int _tmain(int argc, TCHAR *argv[])
+extern "C" int _tmain(int argc, TCHAR *argv[])
 {
 	bool show_usage = false;
     int action_num = 0;
