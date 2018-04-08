@@ -2,6 +2,10 @@
 #if _WIN32_WINNT >= 0x0602 /* Windows 8 and Windows Server 2012 */
 # include <Processthreadsapi.h>
 #endif
+#ifdef __MINGW32__
+// C++ Runtime Library (libstdc++) require C99 printf(), but we dont't use it at all
+# define __USE_MINGW_ANSI_STDIO 0
+#endif
 #include <assert.h>
 #include <direct.h>
 #include <signal.h>
@@ -218,7 +222,7 @@ void LoadConfig(const TCHAR *file)
     PACKAGE_DESCRIPTION = _tcsdup(buf);
 
 	GetPrivateProfileString(_T("Settings"), _T("DisplayName"), NULL, buf, 4096, file);
-	PACKAGE_DISPLAY_NAME = _tcsdup(buf ? buf : PACKAGE_NAME);
+	PACKAGE_DISPLAY_NAME = _tcsdup(buf[0] ? buf : PACKAGE_NAME);
 
     for (int i = 0; i < MAX_PROCESS_NUM; ++i)
     {
@@ -486,8 +490,8 @@ void Usage(TCHAR *prog)
     TCHAR configration_file[MAX_PATH + 1] = {};
     _sntprintf_s(configration_file, _TRUNCATE, _T("%s\\%s.ini"), app_dir, app_name);
 
-    _tprintf(_T("\nUsage: %s [cmdline]\n"), prog);
-	_tprintf(
+    _ftprintf(stdout, _T("\nUsage: %s [cmdline]\n"), prog);
+    _ftprintf(stdout,
         _T("  -c	configuration file, default %s\n")
         _T("  -f	run foreground\n")
 		_T("  -d	run as a background service\n")
@@ -638,7 +642,7 @@ extern "C" int _tmain(int argc, TCHAR *argv[])
 
         if (action)
         {
-            _tprintf(_T("%s service %s\n"), action, (ret == 1 ? _T("successful") : _T("failed")));
+            _ftprintf(stdout, _T("%s service %s\n"), action, (ret == 1 ? _T("successful") : _T("failed")));
         }
     }
 

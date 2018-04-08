@@ -40,14 +40,17 @@
 #include <string.h>
 
 #ifdef WIN32
-#include <tchar.h>
+# ifdef __MINGW32__
+#  define __USE_MINGW_ANSI_STDIO 0
+# endif
+# include <tchar.h>
 #else
-#define _tcslen strlen
-#define _tcsncmp strncmp
-#define _tcschr strchr
-#define _ftprintf fprintf
+# define _tcslen strlen
+# define _tcsncmp strncmp
+# define _tcschr strchr
+# define _ftprintf fprintf
 
-#define _T(x) x
+# define _T(x) x
 #endif
 
 #if !defined(HAVE_GETOPT_LONG)
