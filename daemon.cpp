@@ -36,6 +36,7 @@ struct Process
 {
     time_t start_time;
     TCHAR *cmd;
+    TCHAR *cwd;
     PROCESS_INFORMATION pi;
 
     enum State
@@ -231,6 +232,10 @@ void LoadConfig(const TCHAR *file)
         if (GetPrivateProfileString(appname, _T("CommandLine"), NULL, buf, 4096, file))
         {
             processes[process_count].cmd = _tcsdup(buf);
+            if (GetPrivateProfileString(appname, _T("Directory"), NULL, buf, 4096, file))
+            {
+                processes[process_count].cwd = _tcsdup(buf);
+            }
             ++process_count;
         }
     }
@@ -358,7 +363,7 @@ void run_server()
                     FALSE,          // Set handle inheritance to FALSE
                     CREATE_NEW_PROCESS_GROUP,              // new process group to limit CtrlEvent scope
                     NULL,           // Use parent's environment block
-                    NULL,           // Use parent's starting directory 
+                    processes_to_start[i]->cwd,           // Set Current Directory
                     &si,            // Pointer to STARTUPINFO structure
                     &processes_to_start[i]->pi)           // Pointer to PROCESS_INFORMATION structure
                     )

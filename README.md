@@ -60,12 +60,17 @@ CheckProcessSeconds=30
 ; 定期执行 ping （因为子进程退出后会被自动启动）
 CommandLine=ping qq.com 
 ...
+[Process60]
+; 守护 v2ray，绝对路径，但改变工作目录以加载配置文件 client.json
+commandline="d:\program files\v2ray\v2ray.exe" -config client.json
+Directory="d:\program files\v2ray\"
 [Process61]
 ; 守护 mproxy，当前目录
 CommandLine=mproxy  "-l8888" "-b127.0.0.1" "-s9.9.9.9" "-p60000" -k "your_key"  "-maes-256-cfb" "--pac" "proxy.pac"
 [Process62]
 ; 守护 kcptun，绝对路径
 CommandLine="D:\Program Files\kcptun\kcptun.exe"  -r 9.9.9.9:9999 --key your_key --crypt aes --datashard 0 --parityshard 0 -l 0.0.0.0:8081
+Directory="d:\program files\kcptun\"
 ```
 
 * 安装服务
