@@ -37,6 +37,7 @@ struct Process
     time_t start_time;
     TCHAR *cmd;
     TCHAR *cwd;
+    int restart_seconds;
     PROCESS_INFORMATION pi;
 
     enum State
@@ -55,7 +56,7 @@ volatile BOOL g_run = TRUE;
 BOOL run_as_service = FALSE;
 
 const int force_terminate_child_span = 5;
-const int restart_child_span = 5;
+const int default_restart_child_span = 5;
 
 
 #define TIME_FORMAT_LENGTH 24
@@ -236,6 +237,12 @@ void LoadConfig(const TCHAR *file)
             {
                 processes[process_count].cwd = _tcsdup(buf);
             }
+            processes[process_count].restart_seconds = default_restart_child_span;
+            int restart_seconds = GetPrivateProfileInt(appname, _T("RestartSec"), default_restart_child_span, file);
+            if (restart_seconds > 0)
+            {
+                processes[process_count].restart_seconds = restart_seconds;
+            }
             ++process_count;
         }
     }
@@ -370,7 +377,7 @@ void run_server()
                 {
                     LOGE(_T("CreateProcess failed (%s): %s"), LASTERROR(buf), processes_to_start[i]->cmd);
                     // retry
-                    processes_to_start[i]->start_time = now + restart_child_span;
+                    processes_to_start[i]->start_time = now + processes_to_start[i]->restart_seconds;
                 }
                 else
                 {
@@ -432,7 +439,7 @@ void run_server()
             CloseHandle(processes_to_wait[idx]->pi.hThread);
 
             // prepare to restart child
-            processes_to_wait[idx]->start_time = now + restart_child_span;
+            processes_to_wait[idx]->start_time = now + processes_to_wait[idx]->restart_seconds;
             processes_to_wait[idx]->state = Process::stop;
 
             processes_to_start[processes_to_start_count] = processes_to_wait[idx];
